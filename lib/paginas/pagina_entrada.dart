@@ -35,12 +35,6 @@ enum ConteudoAtual {
 class _PaginaEntradaState extends State<PaginaEntrada> {
   ConteudoAtual conteudoAtual = ConteudoAtual.contadores;
 
-  void _avancarConteudo() {
-  setState(() {
-    conteudoAtual =
-        ConteudoAtual.values[(conteudoAtual.index + 1) % ConteudoAtual.values.length];
-  });
-}
 
 void _controlarAudioAoTrocar() {
   if (conteudoAtual != ConteudoAtual.musica && tocando) {
@@ -426,7 +420,65 @@ void _controlarAudioAoTrocar() {
   
 ];
 
+void _abrirSeletorConteudo() {
+  showModalBottomSheet(
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _itemSeletor(
+              icon: Icons.timelapse,
+              texto: 'Contadores',
+              valor: ConteudoAtual.contadores,
+            ),
+            _itemSeletor(
+              icon: Icons.music_note,
+              texto: 'Música & Letra',
+              valor: ConteudoAtual.musica,
+            ),
+            _itemSeletor(
+              icon: Icons.library_music,
+              texto: 'Sobre a Música',
+              valor: ConteudoAtual.descricaoMusica,
+            ),
+            _itemSeletor(
+              icon: Icons.favorite_border,
+              texto: 'Sobre o App',
+              valor: ConteudoAtual.descricaoApp,
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
+Widget _itemSeletor({
+  required IconData icon,
+  required String texto,
+  required ConteudoAtual valor,
+}) {
+  return ListTile(
+    leading: Icon(icon),
+    title: Text(texto),
+    onTap: () {
+      Navigator.pop(context);
+
+      setState(() {
+        conteudoAtual = valor;
+      });
+
+      _controlarAudioAoTrocar();
+    },
+  );
+}
 
   @override
   void initState() {
@@ -552,19 +604,7 @@ void _controlarAudioAoTrocar() {
 
                         // ❤️ Coração
                         GestureDetector(
-                          onTap: () async {
-                            if (conteudoAtual == ConteudoAtual.musica) {
-                              if (!tocando) {
-                                _player.play();
-                              } else {
-                                _player.pause();
-                              }
-                              setState(() => tocando = !tocando);
-                            } else {
-                              _avancarConteudo();
-                              _controlarAudioAoTrocar();
-                            }
-                          },
+                          onTap: () => _abrirSeletorConteudo(),
                           child: Icon(
                             Icons.favorite,
                             size: 64,
@@ -586,6 +626,7 @@ void _controlarAudioAoTrocar() {
       ),
     );
   }
+
 
   Widget _widgetContadores() {
     return Column(
