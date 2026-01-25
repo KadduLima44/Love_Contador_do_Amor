@@ -25,8 +25,31 @@ class Verso {
   });
 }
 
+enum ConteudoAtual {
+  contadores,
+  musica,
+  descricaoMusica,
+  descricaoApp,
+}
 
 class _PaginaEntradaState extends State<PaginaEntrada> {
+  ConteudoAtual conteudoAtual = ConteudoAtual.contadores;
+
+  void _avancarConteudo() {
+  setState(() {
+    conteudoAtual =
+        ConteudoAtual.values[(conteudoAtual.index + 1) % ConteudoAtual.values.length];
+  });
+}
+
+void _controlarAudioAoTrocar() {
+  if (conteudoAtual != ConteudoAtual.musica && tocando) {
+    _player.pause();
+    tocando = false;
+  }
+}
+
+
   final AudioPlayer _player = AudioPlayer();
   bool tocando = false;
 
@@ -435,6 +458,19 @@ class _PaginaEntradaState extends State<PaginaEntrada> {
     super.dispose();
   }
 
+  Widget _conteudoDinamico() {
+    switch (conteudoAtual) {
+      case ConteudoAtual.contadores:
+        return _widgetContadores();
+      case ConteudoAtual.musica:
+        return _widgetMusica();
+      case ConteudoAtual.descricaoMusica:
+        return _widgetDescricaoMusica();
+      case ConteudoAtual.descricaoApp:
+        return _widgetDescricaoApp();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -495,102 +531,46 @@ class _PaginaEntradaState extends State<PaginaEntrada> {
                               .toList(),
                         ),
 
-                        const SizedBox(height: 14),
-
-                        Text('$diasEncontro dias que nos conhecemos',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text('$diasNamoro dias juntos',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text('$luas luas 🌕 apaixonados',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const Text('Todos os dias amando você',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.1),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _conteudoDinamico(),
+                        ),
 
                         const SizedBox(height: 32),
 
                         // ❤️ Coração
                         GestureDetector(
                           onTap: () async {
-                            if (!tocando) {
-                              _player.play();
+                            if (conteudoAtual == ConteudoAtual.musica) {
+                              if (!tocando) {
+                                _player.play();
+                              } else {
+                                _player.pause();
+                              }
+                              setState(() => tocando = !tocando);
                             } else {
-                              _player.pause();
+                              _avancarConteudo();
+                              _controlarAudioAoTrocar();
                             }
-
-                            setState(() {
-                              tocando = !tocando;
-                            });
                           },
                           child: Icon(
                             Icons.favorite,
                             size: 64,
-                            color: tocando
+                            color: conteudoAtual == ConteudoAtual.musica && tocando
                                 ? const Color(0xFF7E0A7E)
                                 : Colors.grey,
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        if (versoAtual != null) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Text(
-                              versoAtual!.original,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Text(
-                              versoAtual!.traducao,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            children: const [
-                              Text(
-                                '“',
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  color: Color(0xFF7E0A7E),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Uma pequena amostra de todo o carinho que você merece.\n'
-                                'Por que amar se não pudermos expressar todos os dias?',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                '- Kaddu, 2025',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
 
@@ -606,6 +586,101 @@ class _PaginaEntradaState extends State<PaginaEntrada> {
       ),
     );
   }
+
+  Widget _widgetContadores() {
+    return Column(
+      key: const ValueKey('contadores'),
+      children: [
+        Text('$diasEncontro dias que nos conhecemos',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text('$diasNamoro dias juntos',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text('$luas luas 🌕 apaixonados',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Todos os dias amando você',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );                      
+  }
+
+  Widget _widgetMusica() {
+    return Column(
+      key: const ValueKey('musica'),
+      children: [
+        if (versoAtual != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              versoAtual!.original,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              versoAtual!.traducao,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+        ] else
+          const Text('Pressione o coração para ouvir 💜'),
+      ],
+    );
+  }
+  
+  Widget _widgetDescricaoMusica() {
+    return Column(
+      key: const ValueKey('descricaoMusica'),
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'ativos/imagens/capa_album.jpg',
+            height: 220,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Starlight é uma música sobre conexões que resistem ao tempo, '
+            'à distância e ao silêncio do universo.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _widgetDescricaoApp() {
+    return Column(
+      key: const ValueKey('descricaoApp'),
+      children: const [
+        Text(
+          '“',
+          style: TextStyle(
+            fontSize: 32,
+            color: Color(0xFF7E0A7E),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          'Uma pequena amostra de todo o carinho que você merece.\n'
+          'Por que amar se não pudermos expressar todos os dias?',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontStyle: FontStyle.italic),
+        ),
+        SizedBox(height: 8),
+        Text('- Kaddu, 2025'),
+      ],
+    );
+  }
 }
-
-
