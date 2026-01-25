@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -26,6 +27,7 @@ class Verso {
 }
 
 enum ConteudoAtual {
+  inicio,
   contadores,
   musica,
   descricaoMusica,
@@ -33,10 +35,13 @@ enum ConteudoAtual {
 }
 
 class _PaginaEntradaState extends State<PaginaEntrada> {
-  ConteudoAtual conteudoAtual = ConteudoAtual.contadores;
+  ConteudoAtual conteudoAtual = ConteudoAtual.inicio;
 
   int etapaAtual = 0;
   bool modoLivre = false;
+  Timer? _pressTimer;
+  double progressoPressao = 0.0;
+  bool pressionando = false;
 
 void _trocarConteudo(ConteudoAtual novo) {
   if (conteudoAtual == ConteudoAtual.musica &&
@@ -58,18 +63,22 @@ void _acaoDoCoracao() {
 
       switch (etapaAtual) {
         case 1:
-          _trocarConteudo(ConteudoAtual.contadores);
+          _trocarConteudo(ConteudoAtual.inicio);
           break;
 
         case 2:
-          _trocarConteudo(ConteudoAtual.musica);
+          _trocarConteudo(ConteudoAtual.contadores);
           break;
 
         case 3:
-          _trocarConteudo(ConteudoAtual.descricaoMusica);
+          _trocarConteudo(ConteudoAtual.musica);
           break;
 
         case 4:
+          _trocarConteudo(ConteudoAtual.descricaoMusica);
+          break;
+
+        case 5:
           _trocarConteudo(ConteudoAtual.descricaoApp);
           modoLivre = true; // 🔓 libera navegação
           break;
@@ -471,6 +480,11 @@ void _abrirSeletorConteudo() {
           children: [
             _itemSeletor(
               icon: Icons.timelapse,
+              texto: 'Inicio',
+              valor: ConteudoAtual.inicio,
+            ),
+            _itemSeletor(
+              icon: Icons.timelapse,
               texto: 'Contadores',
               valor: ConteudoAtual.contadores,
             ),
@@ -532,6 +546,16 @@ Widget _itemSeletor({
     });
   }
 
+  Color _corDoCoracao() {
+  if (tocando) return const Color(0xFF7E0A7E);
+
+  return Color.lerp(
+      Colors.grey,
+      const Color(0xFF7E0A7E),
+      progressoPressao,
+    )!;
+  }
+
   Future<void> _carregarAudio() async {
     try {
       await _player.setAsset('ativos/musica/starlight.mp3');
@@ -548,6 +572,8 @@ Widget _itemSeletor({
 
   Widget _conteudoDinamico() {
     switch (conteudoAtual) {
+      case ConteudoAtual.inicio:
+        return _widgetInicio();
       case ConteudoAtual.contadores:
         return _widgetContadores();
       case ConteudoAtual.musica:
@@ -667,6 +693,17 @@ Widget _itemSeletor({
     );
   }
 
+  Widget _widgetInicio(){
+    return Column(
+      key: const ValueKey('inicio'),
+      children: const [
+        Text(
+          'Pressione e segure o coração 💜',
+          textAlign: TextAlign.center,
+        ),      
+      ],
+    ); 
+  }
 
   Widget _widgetContadores() {
     return Column(
@@ -685,73 +722,116 @@ Widget _itemSeletor({
   }
 
   Widget _widgetMusica() {
-    return GestureDetector(
-      onLongPressStart: (_) async {
-        // garante que só funcione se estiver nesse widget
-        if (!tocando) {
-          setState(() {
-            tocando = true;
-          });
-          await _player.play();
-        }
-      },
+  return Column(
+    key: const ValueKey('musica'),
+    children: [
+      const SizedBox(height: 16),
 
-      onLongPressEnd: (_) {
-        // opcional: feedback visual ao soltar
-      },
+      GestureDetector(
+        onTapDown: (_) {
+          pressionando = true;
+          progressoPressao = 0;
 
-      child: Column(
-        key: const ValueKey('musica'),
-        children: [
-          const SizedBox(height: 16),
+          _pressTimer = Timer.periodic(
+            const Duration(milliseconds: 100),
+            (timer) async {
+              if (!pressionando) {
+                timer.cancel();
+                return;
+              }
 
-          Icon(
+              setState(() {
+                progressoPressao += 0.05;
+                if (progressoPressao >= 1.0) {
+                  progressoPressao = 1.0;
+                }
+              });
+
+              if (progressoPressao >= 1.0 && !tocando) {
+                timer.cancel();
+                setState(() => tocando = true);
+                await _player.play();
+              }
+            },
+          );
+        },
+
+        onTapUp: (_) {
+          _pressTimer?.cancel();
+
+          // Se NÃO chegou a 2s → é toque curto → troca widget
+          if (!tocando && progressoPressao < 1.0) {
+            _acaoDoCoracao();
+          }
+
+          pressionando = false;
+          progressoPressao = 0;
+          setState(() {});
+        },
+
+        onTapCancel: () {
+          _pressTimer?.cancel();
+          pressionando = false;
+          progressoPressao = 0;
+          setState(() {});
+        },
+
+        child: AnimatedScale(
+          scale: pressionando ? 1.1 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Icon(
             Icons.favorite,
-            size: 56,
-            color: tocando
-                ? const Color(0xFF7E0A7E)
-                : Colors.grey,
+            size: 64,
+            color: _corDoCoracao(),
           ),
-
-          const SizedBox(height: 16),
-
-          if (versoAtual != null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                versoAtual!.original,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                versoAtual!.traducao,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          ] else
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Pressione e segure o coração 💜',
-                textAlign: TextAlign.center,
-              ),
-            ),
-        ],
+        ),
       ),
-    );
-  }
+
+      const SizedBox(height: 12),
+
+      // Legenda
+      if (!tocando)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Pressione e segure o coração por 2 segundos 💜',
+            textAlign: TextAlign.center,
+          ),
+        ),
+
+      const SizedBox(height: 16),
+
+      // Versos só aparecem quando a música começa
+      if (tocando && versoAtual != null) ...[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            versoAtual!.original,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            versoAtual!.traducao,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontStyle: FontStyle.italic,
+              color: Colors.black54,
+            ),
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
 
   
   Widget _widgetDescricaoMusica() {
