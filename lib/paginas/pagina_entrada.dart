@@ -35,14 +35,50 @@ enum ConteudoAtual {
 class _PaginaEntradaState extends State<PaginaEntrada> {
   ConteudoAtual conteudoAtual = ConteudoAtual.contadores;
 
+  int etapaAtual = 0;
+  bool modoLivre = false;
 
-void _controlarAudioAoTrocar() {
-  if (conteudoAtual != ConteudoAtual.musica && tocando) {
+void _trocarConteudo(ConteudoAtual novo) {
+  if (conteudoAtual == ConteudoAtual.musica &&
+      novo != ConteudoAtual.musica &&
+      tocando) {
     _player.pause();
     tocando = false;
   }
+
+  setState(() {
+    conteudoAtual = novo;
+  });
 }
 
+void _acaoDoCoracao() {
+  if (!modoLivre) {
+    setState(() {
+      etapaAtual++;
+
+      switch (etapaAtual) {
+        case 1:
+          _trocarConteudo(ConteudoAtual.contadores);
+          break;
+
+        case 2:
+          _trocarConteudo(ConteudoAtual.musica);
+          break;
+
+        case 3:
+          _trocarConteudo(ConteudoAtual.descricaoMusica);
+          break;
+
+        case 4:
+          _trocarConteudo(ConteudoAtual.descricaoApp);
+          modoLivre = true; // 🔓 libera navegação
+          break;
+      }
+    });
+  } else {
+    _abrirSeletorConteudo(); // modo livre
+  }
+}
 
   final AudioPlayer _player = AudioPlayer();
   bool tocando = false;
@@ -475,7 +511,7 @@ Widget _itemSeletor({
         conteudoAtual = valor;
       });
 
-      _controlarAudioAoTrocar();
+      _trocarConteudo(valor);
     },
   );
 }
@@ -604,13 +640,17 @@ Widget _itemSeletor({
 
                         // ❤️ Coração
                         GestureDetector(
-                          onTap: () => _abrirSeletorConteudo(),
-                          child: Icon(
-                            Icons.favorite,
-                            size: 64,
-                            color: conteudoAtual == ConteudoAtual.musica && tocando
-                                ? const Color(0xFF7E0A7E)
-                                : Colors.grey,
+                          onTap: _acaoDoCoracao,
+                          child: AnimatedScale(
+                            scale: tocando ? 1.1 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              Icons.favorite,
+                              size: 64,
+                              color: modoLivre
+                                  ? const Color(0xFF7E0A7E)
+                                  : Colors.grey,
+                            ),
                           ),
                         ),
 
@@ -645,36 +685,74 @@ Widget _itemSeletor({
   }
 
   Widget _widgetMusica() {
-    return Column(
-      key: const ValueKey('musica'),
-      children: [
-        if (versoAtual != null) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              versoAtual!.original,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+    return GestureDetector(
+      onLongPressStart: (_) async {
+        // garante que só funcione se estiver nesse widget
+        if (!tocando) {
+          setState(() {
+            tocando = true;
+          });
+          await _player.play();
+        }
+      },
+
+      onLongPressEnd: (_) {
+        // opcional: feedback visual ao soltar
+      },
+
+      child: Column(
+        key: const ValueKey('musica'),
+        children: [
+          const SizedBox(height: 16),
+
+          Icon(
+            Icons.favorite,
+            size: 56,
+            color: tocando
+                ? const Color(0xFF7E0A7E)
+                : Colors.grey,
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              versoAtual!.traducao,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontStyle: FontStyle.italic,
-                color: Colors.black54,
+
+          const SizedBox(height: 16),
+
+          if (versoAtual != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                versoAtual!.original,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ] else
-          const Text('Pressione o coração para ouvir 💜'),
-      ],
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                versoAtual!.traducao,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+          ] else
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Pressione e segure o coração 💜',
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
+      ),
     );
   }
+
   
   Widget _widgetDescricaoMusica() {
     return Column(
