@@ -28,10 +28,10 @@ class Verso {
 
 enum ConteudoAtual {
   inicio,
-  contadores,
+  dias,
   musica,
   descricaoMusica,
-  descricaoApp, 
+  citacao, 
   finalApp,
 }
 
@@ -65,7 +65,7 @@ void _acaoDoCoracao() {
 
       switch (etapaAtual) {
         case 1:
-          _trocarConteudo(ConteudoAtual.contadores);
+          _trocarConteudo(ConteudoAtual.dias);
           break;
 
         case 2:
@@ -77,7 +77,7 @@ void _acaoDoCoracao() {
           break;
 
         case 4:
-          _trocarConteudo(ConteudoAtual.descricaoApp);
+          _trocarConteudo(ConteudoAtual.citacao);
           break;
 
         case 5:
@@ -411,12 +411,6 @@ void _acaoDoCoracao() {
     fim: Duration(milliseconds: 213270),
   ),
   Verso(
-    original: "♪",
-    traducao: "",
-    inicio: Duration(milliseconds: 213275),
-    fim: Duration(milliseconds: 213275),
-  ),
-  Verso(
     original: "At night the earth will rise",
     traducao: "À noite a terra vai subir",
     inicio: Duration(milliseconds: 213280),
@@ -482,8 +476,8 @@ void _abrirSeletorConteudo() {
           children: [
             _itemSeletor(
               icon: Icons.timelapse,
-              texto: 'Contadores',
-              valor: ConteudoAtual.contadores,
+              texto: 'Dias',
+              valor: ConteudoAtual.dias,
             ),
             _itemSeletor(
               icon: Icons.music_note,
@@ -498,7 +492,7 @@ void _abrirSeletorConteudo() {
             _itemSeletor(
               icon: Icons.favorite_border,
               texto: 'Sobre o App',
-              valor: ConteudoAtual.descricaoApp,
+              valor: ConteudoAtual.citacao,
             ),
           ],
         ),
@@ -573,14 +567,14 @@ Widget _itemSeletor({
     switch (conteudoAtual) {
       case ConteudoAtual.inicio:
         return _widgetInicio();
-      case ConteudoAtual.contadores:
-        return _widgetContadores();
+      case ConteudoAtual.dias:
+        return _widgetDias();
       case ConteudoAtual.musica:
         return _widgetMusica();
       case ConteudoAtual.descricaoMusica:
         return _widgetDescricaoMusica();
-      case ConteudoAtual.descricaoApp:
-        return _widgetDescricaoApp();
+      case ConteudoAtual.citacao:
+        return _widgetCitacao();
       case ConteudoAtual.finalApp:
         return _widgetFinal();
     }
@@ -762,9 +756,9 @@ Widget _itemSeletor({
     );
   }
 
-  Widget _widgetContadores() {
+  Widget _widgetDias() {
     return Column(
-      key: const ValueKey('contadores'),
+      key: const ValueKey('dias'),
       children: [
         Text('$diasEncontro dias que nos conhecemos',
             style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -863,9 +857,9 @@ Widget _itemSeletor({
     );
   }
 
-  Widget _widgetDescricaoApp() {
+  Widget _widgetCitacao() {
     return Column(
-      key: const ValueKey('descricaoApp'),
+      key: const ValueKey('citacao'),
       children: const [
         Text(
           '“',
