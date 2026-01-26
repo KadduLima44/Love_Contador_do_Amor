@@ -31,7 +31,8 @@ enum ConteudoAtual {
   contadores,
   musica,
   descricaoMusica,
-  descricaoApp,
+  descricaoApp, 
+  finalApp,
 }
 
 class _PaginaEntradaState extends State<PaginaEntrada> {
@@ -42,6 +43,7 @@ class _PaginaEntradaState extends State<PaginaEntrada> {
   Timer? _pressTimer;
   double progressoPressao = 0.0;
   bool pressionando = false;
+  bool coracaoAtivado = false;
 
 void _trocarConteudo(ConteudoAtual novo) {
   if (conteudoAtual == ConteudoAtual.musica &&
@@ -63,23 +65,23 @@ void _acaoDoCoracao() {
 
       switch (etapaAtual) {
         case 1:
-          _trocarConteudo(ConteudoAtual.inicio);
-          break;
-
-        case 2:
           _trocarConteudo(ConteudoAtual.contadores);
           break;
 
-        case 3:
+        case 2:
           _trocarConteudo(ConteudoAtual.musica);
           break;
 
-        case 4:
+        case 3:
           _trocarConteudo(ConteudoAtual.descricaoMusica);
           break;
 
-        case 5:
+        case 4:
           _trocarConteudo(ConteudoAtual.descricaoApp);
+          break;
+
+        case 5:
+          _trocarConteudo(ConteudoAtual.finalApp);
           modoLivre = true; // 🔓 libera navegação
           break;
       }
@@ -480,11 +482,6 @@ void _abrirSeletorConteudo() {
           children: [
             _itemSeletor(
               icon: Icons.timelapse,
-              texto: 'Inicio',
-              valor: ConteudoAtual.inicio,
-            ),
-            _itemSeletor(
-              icon: Icons.timelapse,
               texto: 'Contadores',
               valor: ConteudoAtual.contadores,
             ),
@@ -547,9 +544,11 @@ Widget _itemSeletor({
   }
 
   Color _corDoCoracao() {
-  if (tocando) return const Color(0xFF7E0A7E);
+    if (coracaoAtivado || tocando) {
+      return const Color(0xFF7E0A7E);
+    }
 
-  return Color.lerp(
+    return Color.lerp(
       Colors.grey,
       const Color(0xFF7E0A7E),
       progressoPressao,
@@ -582,6 +581,8 @@ Widget _itemSeletor({
         return _widgetDescricaoMusica();
       case ConteudoAtual.descricaoApp:
         return _widgetDescricaoApp();
+      case ConteudoAtual.finalApp:
+        return _widgetFinal();
     }
   }
 
@@ -693,6 +694,7 @@ Widget _itemSeletor({
                                   timer.cancel();
 
                                   setState(() {
+                                    coracaoAtivado = true;
                                     tocando = true;
                                   });
 
@@ -754,7 +756,7 @@ Widget _itemSeletor({
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: const Text(
-        'Faça bater 💜',
+        'Faça o 💜 bater',
         textAlign: TextAlign.center,
       ),
     );
@@ -825,21 +827,36 @@ Widget _itemSeletor({
     return Column(
       key: const ValueKey('descricaoMusica'),
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.asset(
-            'ativos/imagens/capa_album.jpg',
-            height: 220,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(height: 16),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'Starlight é uma música sobre conexões que resistem ao tempo, '
-            'à distância e ao silêncio do universo.',
+            'Sobre "O amor cósmico e eterno em “Starlight”',
             textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            '“Starlight”, de Starset, retrata o amor como algo tão vasto '
+            'e duradouro quanto o próprio universo. A letra usa imagens '
+            'cósmicas para mostrar um vínculo que transcende o tempo e a distância, '
+            'transformando o sentimento em uma luz que guia mesmo na escuridão.\n\n'
+            'Se destaca como uma metáfora poderosa sobre amor eterno, esperança '
+            'e a busca por união, mesmo diante de grandes obstáculos '
+            'mantendo a promessa de persistência e busca pelo reencontro.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: Colors.black54,
+            ),
           ),
         ),
       ],
@@ -854,7 +871,7 @@ Widget _itemSeletor({
           '“',
           style: TextStyle(
             fontSize: 32,
-            color: Color(0xFF7E0A7E),
+            color: Colors.black54,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -867,6 +884,16 @@ Widget _itemSeletor({
         SizedBox(height: 8),
         Text('- Kaddu, 2025'),
       ],
+    );
+  }
+
+  Widget _widgetFinal(){
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: const Text(
+        'Continue a bater o 💜',
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }
