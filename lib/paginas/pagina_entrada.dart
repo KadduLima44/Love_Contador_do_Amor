@@ -405,16 +405,10 @@ void _acaoDoCoracao() {
     fim: Duration(milliseconds: 211700),
   ),
   Verso(
-    original: "Bring me back to you",
-    traducao: "Traga-me de volta para você",
+    original: "Bring me back to you At night the earth will rise",
+    traducao: "Traga-me de volta para você À noite a terra vai subir",
     inicio: Duration(milliseconds: 211710),
-    fim: Duration(milliseconds: 213270),
-  ),
-  Verso(
-    original: "At night the earth will rise",
-    traducao: "À noite a terra vai subir",
-    inicio: Duration(milliseconds: 213280),
-    fim: Duration(milliseconds: 213320),
+    fim: Duration(milliseconds: 213325),
   ),
   Verso(
     original: "And I'll think of you each time I watch from distant skies",
