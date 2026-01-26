@@ -394,12 +394,12 @@ void _acaoDoCoracao() {
     original: "Don't leave me lost here forever",
     traducao: "Não me deixe perdido aqui para sempre",
     inicio: Duration(milliseconds: 200670),
-    fim: Duration(milliseconds: 205450),
+    fim: Duration(milliseconds: 205440),
   ),
   Verso(
     original: "I need your starlight and pull me through (Bring me back to you)",
     traducao: "Eu preciso da sua luz estelar e me puxe (Traga-me de volta para você)",
-    inicio: Duration(milliseconds: 205460),
+    inicio: Duration(milliseconds: 205450),
     fim: Duration(milliseconds: 211700),
   ),
   Verso(
@@ -411,7 +411,7 @@ void _acaoDoCoracao() {
   Verso(
     original: "♪",
     traducao: "",
-    inicio: Duration(milliseconds: 213270),
+    inicio: Duration(milliseconds: 213275),
     fim: Duration(milliseconds: 213275),
   ),
   Verso(
@@ -666,19 +666,76 @@ Widget _itemSeletor({
 
                         // ❤️ Coração
                         GestureDetector(
-                          onTap: _acaoDoCoracao,
+                          onTapDown: (_) {
+                            pressionando = true;
+                            progressoPressao = 0.0;
+
+                            _pressTimer?.cancel();
+                            _pressTimer = Timer.periodic(
+                              const Duration(milliseconds: 50),
+                              (timer) async {
+                                if (!pressionando) {
+                                  timer.cancel();
+                                  return;
+                                }
+
+                                setState(() {
+                                  progressoPressao += 0.05;
+                                  if (progressoPressao >= 1.0) {
+                                    progressoPressao = 1.0;
+                                  }
+                                });
+
+                                // ⏱ 2 segundos completos
+                                if (progressoPressao >= 1.0 &&
+                                    conteudoAtual == ConteudoAtual.musica &&
+                                    !tocando) {
+                                  timer.cancel();
+
+                                  setState(() {
+                                    tocando = true;
+                                  });
+
+                                  await _player.play();
+                                }
+                              },
+                            );
+                          },
+
+                          onTapUp: (_) {
+                            pressionando = false;
+                            _pressTimer?.cancel();
+
+                            // 👇 se NÃO completou 2s → é toque curto
+                            if (progressoPressao < 1.0) {
+                              _acaoDoCoracao();
+                            }
+
+                            setState(() {
+                              progressoPressao = 0.0;
+                            });
+                          },
+
+                          onTapCancel: () {
+                            pressionando = false;
+                            _pressTimer?.cancel();
+
+                            setState(() {
+                              progressoPressao = 0.0;
+                            });
+                          },
+
                           child: AnimatedScale(
                             scale: tocando ? 1.1 : 1.0,
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
                               Icons.favorite,
                               size: 64,
-                              color: modoLivre
-                                  ? const Color(0xFF7E0A7E)
-                                  : Colors.grey,
+                              color: _corDoCoracao(),
                             ),
                           ),
                         ),
+
 
                         const SizedBox(height: 40),
                       ],
@@ -720,117 +777,49 @@ Widget _itemSeletor({
   }
 
   Widget _widgetMusica() {
-  return Column(
-    key: const ValueKey('musica'),
-    children: [
-      const SizedBox(height: 16),
+    return Column(
+      key: const ValueKey('musica'),
+      children: [
+        const SizedBox(height: 16),
 
-      GestureDetector(
-        onTapDown: (_) {
-          pressionando = true;
-          progressoPressao = 0;
-
-          _pressTimer = Timer.periodic(
-            const Duration(milliseconds: 100),
-            (timer) async {
-              if (!pressionando) {
-                timer.cancel();
-                return;
-              }
-
-              setState(() {
-                progressoPressao += 0.05;
-                if (progressoPressao >= 1.0) {
-                  progressoPressao = 1.0;
-                }
-              });
-
-              if (progressoPressao >= 1.0 && !tocando) {
-                timer.cancel();
-                setState(() => tocando = true);
-                await _player.play();
-              }
-            },
-          );
-        },
-
-        onTapUp: (_) {
-          _pressTimer?.cancel();
-
-          // Se NÃO chegou a 2s → é toque curto → troca widget
-          if (!tocando && progressoPressao < 1.0) {
-            _acaoDoCoracao();
-          }
-
-          pressionando = false;
-          progressoPressao = 0;
-          setState(() {});
-        },
-
-        onTapCancel: () {
-          _pressTimer?.cancel();
-          pressionando = false;
-          progressoPressao = 0;
-          setState(() {});
-        },
-
-        child: AnimatedScale(
-          scale: pressionando ? 1.1 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: Icon(
-            Icons.favorite,
-            size: 64,
-            color: _corDoCoracao(),
-          ),
-        ),
-      ),
-
-      const SizedBox(height: 12),
-
-      // Legenda
-      if (!tocando)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            'Pressione e segure o coração por 2 segundos 💜',
-            textAlign: TextAlign.center,
-          ),
-        ),
-
-      const SizedBox(height: 16),
-
-      // Versos só aparecem quando a música começa
-      if (tocando && versoAtual != null) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            versoAtual!.original,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        if (!tocando)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Pressione e segure o coração por 2 segundos 💜',
+              textAlign: TextAlign.center,
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            versoAtual!.traducao,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              fontStyle: FontStyle.italic,
-              color: Colors.black54,
+
+        if (tocando && versoAtual != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              versoAtual!.original,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              versoAtual!.traducao,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+        ],
       ],
-    ],
-  );
-}
-
-
+    );
+  }
   
   Widget _widgetDescricaoMusica() {
     return Column(
