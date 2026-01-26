@@ -694,15 +694,13 @@ Widget _itemSeletor({
   }
 
   Widget _widgetInicio(){
-    return Column(
-      key: const ValueKey('inicio'),
-      children: const [
-        Text(
-          'Pressione e segure o coração 💜',
-          textAlign: TextAlign.center,
-        ),      
-      ],
-    ); 
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: const Text(
+        'Faça bater 💜',
+        textAlign: TextAlign.center,
+      ),
+    );
   }
 
   Widget _widgetContadores() {
